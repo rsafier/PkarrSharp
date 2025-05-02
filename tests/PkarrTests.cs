@@ -56,20 +56,58 @@ namespace Pkarr.Tests
                 throw new PlatformNotSupportedException("Unsupported OS platform");
         }
 
-        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_init", ExactSpelling = false)]
+#if OSX
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_init")]
         public static extern IntPtr PkarrInit();
 
-        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_shutdown", ExactSpelling = false)]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_shutdown")]
         public static extern void PkarrShutdown();
 
-        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_resolve", ExactSpelling = false)]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_resolve")]
         public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
 
-        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_free_result", ExactSpelling = false)]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_result")]
         public static extern void PkarrFreeResult(ResolveResult result);
 
-        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_free_signed_packet_ffi", ExactSpelling = false)]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_signed_packet_ffi")]
         public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
+#elif LINUX
+        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_init")]
+        public static extern IntPtr PkarrInit();
+
+        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_shutdown")]
+        public static extern void PkarrShutdown();
+
+        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_resolve")]
+        public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
+
+        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_free_result")]
+        public static extern void PkarrFreeResult(ResolveResult result);
+
+        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_free_signed_packet_ffi")]
+        public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
+#elif WINDOWS
+        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_init")]
+        public static extern IntPtr PkarrInit();
+
+        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_shutdown")]
+        public static extern void PkarrShutdown();
+
+        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_resolve")]
+        public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
+
+        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_free_result")]
+        public static extern void PkarrFreeResult(ResolveResult result);
+
+        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_free_signed_packet_ffi")]
+        public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
+#else
+        public static IntPtr PkarrInit() => throw new PlatformNotSupportedException("Unsupported OS platform");
+        public static void PkarrShutdown() => throw new PlatformNotSupportedException("Unsupported OS platform");
+        public static ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent) => throw new PlatformNotSupportedException("Unsupported OS platform");
+        public static void PkarrFreeResult(ResolveResult result) => throw new PlatformNotSupportedException("Unsupported OS platform");
+        public static void PkarrFreeSignedPacketFFI(SignedPacketFFI packet) => throw new PlatformNotSupportedException("Unsupported OS platform");
+#endif
 
         [TestInitialize]
         public void Setup()
@@ -220,11 +258,28 @@ namespace Pkarr.Tests
             PkarrFreeResult(result);
         }
 
-        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_generate_keypair", ExactSpelling = false)]
+#if OSX
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_generate_keypair")]
         public static extern ResolveResult PkarrGenerateKeypair();
 
-        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_publish", ExactSpelling = false)]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_publish")]
         public static extern ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
+#elif LINUX
+        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_generate_keypair")]
+        public static extern ResolveResult PkarrGenerateKeypair();
+
+        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_publish")]
+        public static extern ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
+#elif WINDOWS
+        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_generate_keypair")]
+        public static extern ResolveResult PkarrGenerateKeypair();
+
+        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_publish")]
+        public static extern ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
+#else
+        public static ResolveResult PkarrGenerateKeypair() => throw new PlatformNotSupportedException("Unsupported OS platform");
+        public static ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl) => throw new PlatformNotSupportedException("Unsupported OS platform");
+#endif
 
         [TestMethod]
         public void TestResolveInvalidKey()

@@ -4,6 +4,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <DefineConstants Condition="'$(OS)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(OS)' == 'Unix' And '$(OSPlatform)' == 'OSX'">$(DefineConstants);OSX</DefineConstants>
+    <DefineConstants Condition="'$(OS)' == 'Unix' And '$(OSPlatform)' != 'OSX'">$(DefineConstants);LINUX</DefineConstants>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
