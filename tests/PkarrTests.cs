@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 // Using the NSec.Cryptography library
 using NSec.Cryptography;
+using System.Runtime.InteropServices;
 namespace Pkarr.Tests
 {
   
@@ -43,19 +44,31 @@ namespace Pkarr.Tests
         }
 
         // P/Invoke declarations for the pkarr-ffi library
-        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_init")]
+        private static string GetLibraryName()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return "libpkarr_ffi.dylib";
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                return "libpkarr_ffi.so";
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return "pkarr_ffi.dll";
+            else
+                throw new PlatformNotSupportedException("Unsupported OS platform");
+        }
+
+        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_init", ExactSpelling = false)]
         public static extern IntPtr PkarrInit();
 
-        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_shutdown")]
+        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_shutdown", ExactSpelling = false)]
         public static extern void PkarrShutdown();
 
-        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_resolve")]
+        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_resolve", ExactSpelling = false)]
         public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
 
-        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_result")]
+        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_free_result", ExactSpelling = false)]
         public static extern void PkarrFreeResult(ResolveResult result);
 
-        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_signed_packet_ffi")]
+        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_free_signed_packet_ffi", ExactSpelling = false)]
         public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
 
         [TestInitialize]
@@ -207,10 +220,10 @@ namespace Pkarr.Tests
             PkarrFreeResult(result);
         }
 
-        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_generate_keypair")]
+        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_generate_keypair", ExactSpelling = false)]
         public static extern ResolveResult PkarrGenerateKeypair();
 
-        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_publish")]
+        [DllImport("libpkarr_ffi", EntryPoint = "pkarr_publish", ExactSpelling = false)]
         public static extern ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
 
         [TestMethod]
