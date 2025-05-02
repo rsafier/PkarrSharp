@@ -42,19 +42,19 @@ namespace Pkarr.Tests
         }
 
         // P/Invoke declarations for the pkarr-ffi library
-        [DllImport("../../../../../../target/debug/libpkarr_ffi.dylib", EntryPoint = "pkarr_init")]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_init")]
         public static extern IntPtr PkarrInit();
 
-        [DllImport("../../../../../../target/debug/libpkarr_ffi.dylib", EntryPoint = "pkarr_shutdown")]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_shutdown")]
         public static extern void PkarrShutdown();
 
-        [DllImport("../../../../../../target/debug/libpkarr_ffi.dylib", EntryPoint = "pkarr_resolve")]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_resolve")]
         public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
 
-        [DllImport("../../../../../../target/debug/libpkarr_ffi.dylib", EntryPoint = "pkarr_free_result")]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_result")]
         public static extern void PkarrFreeResult(ResolveResult result);
 
-        [DllImport("../../../../../../target/debug/libpkarr_ffi.dylib", EntryPoint = "pkarr_free_signed_packet_ffi")]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_signed_packet_ffi")]
         public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
 
         [TestInitialize]
@@ -206,10 +206,10 @@ namespace Pkarr.Tests
             PkarrFreeResult(result);
         }
 
-        [DllImport("../../../../../../target/debug/libpkarr_ffi.dylib", EntryPoint = "pkarr_generate_keypair")]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_generate_keypair")]
         public static extern ResolveResult PkarrGenerateKeypair();
 
-        [DllImport("../../../../../../target/debug/libpkarr_ffi.dylib", EntryPoint = "pkarr_publish")]
+        [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_publish")]
         public static extern ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
 
         [TestMethod]
