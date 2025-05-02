@@ -197,7 +197,7 @@ namespace Pkarr.Tests
         public void TestResolve()
         {
             // Using a placeholder public key for testing. Replace with a real key if needed.
-            string publicKey = "gpj136mfx7j8qeu3gurpm9eys7zuyt43pnx5f45bfw1s7thdoa8o";
+            string publicKey = "o4dksfbqk85ogzdb5osziw6befigbuxmuxkuxq8434q89uj56uyy";
             Console.WriteLine($"Testing resolve with public key: {publicKey}");
             
             IntPtr publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
