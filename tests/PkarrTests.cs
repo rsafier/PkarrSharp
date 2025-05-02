@@ -428,7 +428,7 @@ namespace Pkarr.Tests
 
             // Now attempt to resolve the published record
             Console.WriteLine($"Testing resolve after publish with public key: {publicKey}");
-            publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
+            IntPtr publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
             ResolveResult resolveResult = PkarrResolve(publicKeyPtr, true);
             Marshal.FreeHGlobal(publicKeyPtr);
 
@@ -542,7 +542,7 @@ namespace Pkarr.Tests
 
             // Now attempt to resolve the published record
             Console.WriteLine($"Testing resolve after publish with public key: {publicKey}");
-            publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
+            IntPtr publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
             ResolveResult resolveResult = PkarrResolve(publicKeyPtr, true);
             Marshal.FreeHGlobal(publicKeyPtr);
 
