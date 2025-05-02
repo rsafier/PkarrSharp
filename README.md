@@ -62,8 +62,7 @@ public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRe
 The repository includes a test suite written in C# to validate the functionality of the library. To run the tests:
 
 1. Build the library and copy it to the test directory using `./build.sh`.
-2. Navigate to the `tests` directory.
-3. Run the tests with the appropriate test runner for the C# project, e.g., `dotnet test`.
+2. Run the tests from the root directory with `dotnet test tests/PkarrTests.csproj`.
 
 ## License
 

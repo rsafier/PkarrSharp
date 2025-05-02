@@ -16,7 +16,9 @@ else
     exit 1
 fi
 
-# Copy the library to the tests directory
+# Copy the library to the tests directory and the output directory
 cp "target/release/$LIB_NAME" "tests/$LIB_NAME"
+mkdir -p "tests/bin/Debug/net8.0/"
+cp "target/release/$LIB_NAME" "tests/bin/Debug/net8.0/$LIB_NAME"
 
 echo "Build and copy completed successfully."
