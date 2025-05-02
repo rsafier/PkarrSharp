@@ -263,22 +263,22 @@ namespace Pkarr.Tests
         public static extern ResolveResult PkarrGenerateKeypair();
 
         [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_publish")]
-        public static extern ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
+        public static extern ResolveResult PkarrPublish(IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
 #elif LINUX
         [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_generate_keypair")]
         public static extern ResolveResult PkarrGenerateKeypair();
 
         [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_publish")]
-        public static extern ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
+        public static extern ResolveResult PkarrPublish(IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
 #elif WINDOWS
         [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_generate_keypair")]
         public static extern ResolveResult PkarrGenerateKeypair();
 
         [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_publish")]
-        public static extern ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
+        public static extern ResolveResult PkarrPublish(IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
 #else
         public static ResolveResult PkarrGenerateKeypair() => throw new PlatformNotSupportedException("Unsupported OS platform");
-        public static ResolveResult PkarrPublish(IntPtr publicKeyStr, IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl) => throw new PlatformNotSupportedException("Unsupported OS platform");
+        public static ResolveResult PkarrPublish(IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl) => throw new PlatformNotSupportedException("Unsupported OS platform");
 #endif
 
         [TestMethod]
@@ -386,14 +386,12 @@ namespace Pkarr.Tests
             string txtValue = "bar";
             uint ttl = 30;
 
-            IntPtr publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
             IntPtr privateKeyPtr = Marshal.StringToHGlobalAnsi(privateKeyHex);
             IntPtr txtKeyPtr = Marshal.StringToHGlobalAnsi(txtKey);
             IntPtr txtValuePtr = Marshal.StringToHGlobalAnsi(txtValue);
 
-            ResolveResult result = PkarrPublish(publicKeyPtr, privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
+            ResolveResult result = PkarrPublish(privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
 
-            Marshal.FreeHGlobal(publicKeyPtr);
             Marshal.FreeHGlobal(privateKeyPtr);
             Marshal.FreeHGlobal(txtKeyPtr);
             Marshal.FreeHGlobal(txtValuePtr);
@@ -502,14 +500,12 @@ namespace Pkarr.Tests
             string txtValue = "bar";
             uint ttl = 30;
 
-            IntPtr publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
             IntPtr privateKeyPtr = Marshal.StringToHGlobalAnsi(privateKeyHex);
             IntPtr txtKeyPtr = Marshal.StringToHGlobalAnsi(txtKey);
             IntPtr txtValuePtr = Marshal.StringToHGlobalAnsi(txtValue);
 
-            ResolveResult result = PkarrPublish(publicKeyPtr, privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
+            ResolveResult result = PkarrPublish(privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
 
-            Marshal.FreeHGlobal(publicKeyPtr);
             Marshal.FreeHGlobal(privateKeyPtr);
             Marshal.FreeHGlobal(txtKeyPtr);
             Marshal.FreeHGlobal(txtValuePtr);
