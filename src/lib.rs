@@ -262,7 +262,7 @@ pub extern "C" fn pkarr_generate_keypair() -> ResolveResult {
 }
 
 #[no_mangle]
-pub extern "C" fn pkarr_publish(public_key_str: *const i8, private_key_str: *const i8, txt_key: *const i8, txt_value: *const i8, ttl: u32) -> ResolveResult {
+pub extern "C" fn pkarr_publish(private_key_str: *const i8, txt_key: *const i8, txt_value: *const i8, ttl: u32) -> ResolveResult {
     let rt_guard = RUNTIME.lock().unwrap();
     let Some(ref rt) = *rt_guard else {
         return ResolveResult {
@@ -282,18 +282,6 @@ pub extern "C" fn pkarr_publish(public_key_str: *const i8, private_key_str: *con
     };
     
     let result = rt.block_on(async {
-        let public_key_c_str = unsafe { CStr::from_ptr(public_key_str) };
-        let public_key_str = match public_key_c_str.to_str() {
-            Ok(s) => s,
-            Err(_) => {
-                return ResolveResult {
-                    data: ptr::null_mut(),
-                    length: 0,
-                    error: CString::new("Invalid public key string").unwrap().into_raw(),
-                };
-            }
-        };
-
         let private_key_c_str = unsafe { CStr::from_ptr(private_key_str) };
         let private_key_str = match private_key_c_str.to_str() {
             Ok(s) => s,
@@ -368,17 +356,9 @@ pub extern "C" fn pkarr_publish(public_key_str: *const i8, private_key_str: *con
             }
         };
 
-        // Verify that the public key matches
-        if keypair.public_key().to_z32() != public_key_str {
-            return ResolveResult {
-                data: ptr::null_mut(),
-                length: 0,
-                error: CString::new("Provided public key does not match the private key").unwrap().into_raw(),
-            };
-        }
-
         match client.publish(&signed_packet, None).await {
             Ok(()) => {
+                let public_key_str = keypair.public_key().to_z32();
                 let success_msg = format!("Published successfully for {}", public_key_str);
                 let bytes = success_msg.into_bytes();
                 let length = bytes.len();
