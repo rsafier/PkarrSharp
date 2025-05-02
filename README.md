@@ -16,13 +16,13 @@ Pkarr is a Foreign Function Interface (FFI) library that provides a Rust-based b
 
 ## Building the Library
 
-This project uses Cargo, the Rust package manager, to build the library.
+This project uses Cargo, the Rust package manager, to build the library. A build script is provided to automate the process of building the Rust library and copying it to the C# test project.
 
 ```bash
-cargo build
+./build.sh
 ```
 
-The compiled library will be available in the `target/debug/` directory as `libpkarr_ffi.dylib` (on macOS) or the equivalent for your platform.
+The compiled library will be available in the `target/release/` directory as `libpkarr_ffi.dylib` (on macOS), `libpkarr_ffi.so` (on Linux), or `pkarr_ffi.dll` (on Windows), and will be copied to the `tests` directory for use in the C# project.
 
 ## Usage
 
@@ -61,9 +61,9 @@ public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRe
 
 The repository includes a test suite written in C# to validate the functionality of the library. To run the tests:
 
-1. Build the library using `cargo build`.
+1. Build the library and copy it to the test directory using `./build.sh`.
 2. Navigate to the `tests` directory.
-3. Run the tests with the appropriate test runner for the C# project.
+3. Run the tests with the appropriate test runner for the C# project, e.g., `dotnet test`.
 
 ## License
 
