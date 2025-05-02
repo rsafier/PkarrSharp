@@ -3,3 +3,4 @@ target/
 obj/
 bin/
 .idea/
+*.dylib
