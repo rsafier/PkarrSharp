@@ -94,6 +94,7 @@ fn rdata_to_string(rdata: &RData) -> (u16, String) {
         RData::PTR(ptr) => (12, ptr.to_string()),
         RData::SOA(soa) => (6, format!("MNAME: {}, RNAME: {}, SERIAL: {}, REFRESH: {}, RETRY: {}, EXPIRE: {}, MINIMUM: {}", 
             soa.mname.to_string(), soa.rname.to_string(), soa.serial, soa.refresh, soa.retry, soa.expire, soa.minimum)),
+        RData::HTTPS(https) => (0, https.target.to_string()),
         _ => (0, format!("Unsupported RData type: {:?}", rdata)),
     }
 }
