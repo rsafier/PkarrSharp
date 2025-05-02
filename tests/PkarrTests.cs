@@ -1,11 +1,10 @@
-using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-// Using the NSec.Cryptography library
 using NSec.Cryptography;
-using System.Runtime.InteropServices;
-namespace Pkarr.Tests
+// Using the NSec.Cryptography library
+
+namespace PkarrTests
 {
   
     [TestClass]

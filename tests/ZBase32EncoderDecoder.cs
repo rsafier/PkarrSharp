@@ -1,5 +1,6 @@
-using System;
 using System.Text;
+
+namespace PkarrTests;
 
 public static class ZBase32
 {
