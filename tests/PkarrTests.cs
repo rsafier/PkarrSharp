@@ -2,7 +2,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+// Using the NSec.Cryptography library
+using NSec.Cryptography;
 namespace Pkarr.Tests
 {
   
@@ -302,43 +303,16 @@ namespace Pkarr.Tests
             Assert.IsTrue(publicKeyBytes.SequenceEqual(decodedBytes), "Decoded bytes should match the original input.");
         }
 
+
         [TestMethod]
-        public void TestPublish()
+        public void TestPublishRandomPK()
         {
             Console.WriteLine("Testing publish functionality");
+
+            var pkPair = GenerateRandomEd25519KeyPair();
+            string publicKey = pkPair.publicKeyZBase32;
+            string privateKeyHex = pkPair.privateKeyHex;;
             
-            // First generate a keypair
-            ResolveResult keyResult = PkarrGenerateKeypair();
-            if (keyResult.error != IntPtr.Zero)
-            {
-                string errorMessage = Marshal.PtrToStringAnsi(keyResult.error);
-                PkarrFreeResult(keyResult);
-                Console.WriteLine($"Keypair generation failed: {errorMessage}");
-                Assert.Fail($"Keypair generation failed: {errorMessage}");
-            }
-
-            string publicKey = "";
-            string privateKeyHex = "";
-            if (keyResult.data != IntPtr.Zero && keyResult.length.ToUInt64() > 0)
-            {
-                byte[] data = new byte[keyResult.length.ToUInt64()];
-                Marshal.Copy(keyResult.data, data, 0, data.Length);
-                string keypairStr = Encoding.UTF8.GetString(data);
-                var parts = keypairStr.Split('|');
-                if (parts.Length == 2)
-                {
-                    publicKey = parts[0];
-                    privateKeyHex = parts[1];
-                    Console.WriteLine($"Using generated public key for publish: {publicKey}");
-                    Console.WriteLine($"Using generated private key (hex) for publish: {privateKeyHex}");
-                }
-                
-                // Free the data since it's a Vec<u8> and not a struct
-                Marshal.FreeHGlobal(keyResult.data);
-                keyResult.data = IntPtr.Zero;
-            }
-            PkarrFreeResult(keyResult);
-
             // Now publish a TXT record
             string txtKey = "_foo";
             string txtValue = "bar";
@@ -445,5 +419,166 @@ namespace Pkarr.Tests
 
             PkarrFreeResult(resolveResult);
         }
+        
+        
+        [TestMethod]
+        public void TestPublishFixedPK()
+        {
+            Console.WriteLine("Testing publish functionality");
+            
+            string privateKeyHex = "4c069a831ff30dcd404ec4269d2c3f09322c7422b821419e926241f750965bfa";
+            string publicKey = (GetPublicKeyFromPrivate(privateKeyHex));
+             
+            // Now publish a TXT record
+            string txtKey = "_foo";
+            string txtValue = "bar";
+            uint ttl = 30;
+
+            IntPtr publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
+            IntPtr privateKeyPtr = Marshal.StringToHGlobalAnsi(privateKeyHex);
+            IntPtr txtKeyPtr = Marshal.StringToHGlobalAnsi(txtKey);
+            IntPtr txtValuePtr = Marshal.StringToHGlobalAnsi(txtValue);
+
+            ResolveResult result = PkarrPublish(publicKeyPtr, privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
+
+            Marshal.FreeHGlobal(publicKeyPtr);
+            Marshal.FreeHGlobal(privateKeyPtr);
+            Marshal.FreeHGlobal(txtKeyPtr);
+            Marshal.FreeHGlobal(txtValuePtr);
+
+            if (result.error != IntPtr.Zero)
+            {
+                string errorMessage = Marshal.PtrToStringAnsi(result.error);
+                PkarrFreeResult(result);
+                Console.WriteLine($"Publish failed: {errorMessage}");
+                Assert.Fail($"Publish failed: {errorMessage}");
+            }
+
+            if (result.data != IntPtr.Zero && result.length.ToUInt64() > 0)
+            {
+                byte[] data = new byte[result.length.ToUInt64()];
+                Marshal.Copy(result.data, data, 0, data.Length);
+                string successMessage = Encoding.UTF8.GetString(data);
+                Console.WriteLine($"Publish result: {successMessage}");
+                
+                // Free the data since it's a Vec<u8> and not a struct
+                Marshal.FreeHGlobal(result.data);
+                result.data = IntPtr.Zero;
+            }
+            else
+            {
+                Console.WriteLine("No data returned from publish");
+            }
+
+            PkarrFreeResult(result);
+
+            // Add a small delay to allow for propagation
+            Console.WriteLine("Waiting for propagation...");
+            System.Threading.Thread.Sleep(5000);
+
+            // Now attempt to resolve the published record
+            Console.WriteLine($"Testing resolve after publish with public key: {publicKey}");
+            publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
+            ResolveResult resolveResult = PkarrResolve(publicKeyPtr, true);
+            Marshal.FreeHGlobal(publicKeyPtr);
+
+            if (resolveResult.error != IntPtr.Zero)
+            {
+                string errorMessage = Marshal.PtrToStringAnsi(resolveResult.error);
+                PkarrFreeResult(resolveResult);
+                Console.WriteLine($"Resolve after publish failed: {errorMessage}");
+                // Not failing the test as this might be expected if the data isn't immediately available
+                return;
+            }
+
+            if (resolveResult.data != IntPtr.Zero && resolveResult.length.ToUInt64() > 0)
+            {
+                SignedPacketFFI packet = Marshal.PtrToStructure<SignedPacketFFI>(resolveResult.data);
+                string pubKey = Marshal.PtrToStringAnsi(packet.publicKey);
+                Console.WriteLine($"Resolved packet for public key: {pubKey}");
+                Console.WriteLine($"Timestamp: {packet.timestamp}");
+                Console.WriteLine($"Last Seen: {packet.lastSeen}");
+                Console.WriteLine($"Number of records: {packet.recordsCount.ToUInt64()}");
+
+                if (packet.recordsCount.ToUInt64() > 0 && packet.records != IntPtr.Zero)
+                {
+                    for (ulong i = 0; i < packet.recordsCount.ToUInt64(); i++)
+                    {
+                        IntPtr recordPtr = IntPtr.Add(packet.records, (int)i * Marshal.SizeOf<ResourceRecord>());
+                        ResourceRecord record = Marshal.PtrToStructure<ResourceRecord>(recordPtr);
+                        string name = Marshal.PtrToStringAnsi(record.name);
+                        string rdata = Marshal.PtrToStringAnsi(record.rdataData);
+                        Console.WriteLine($"Record {i + 1}:");
+                        Console.WriteLine($"  Name: {name}");
+                        Console.WriteLine($"  Class: {record.classType}");
+                        Console.WriteLine($"  TTL: {record.ttl}");
+                        Console.WriteLine($"  RData Type: {record.rdataType}");
+                        Console.WriteLine($"  RData: {rdata}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No records found in the packet.");
+                }
+
+                // Store the pointer to free it later
+                IntPtr packetPtr = resolveResult.data;
+                PkarrFreeSignedPacketFFI(packet);
+                // Don't free result.data again in PkarrFreeResult since we already freed it
+                resolveResult.data = IntPtr.Zero;
+            }
+            else
+            {
+                Console.WriteLine("No data returned from resolve after publish");
+                // Not failing the test as this might be expected if the data isn't immediately available
+            }
+
+            PkarrFreeResult(resolveResult);
+        }
+        
+        
+     
+
+        public string GetPublicKeyFromPrivate(string privateKeyHex)
+        {
+            // Convert hex string to byte array
+            byte[] privateKeyBytes = Convert.FromHexString(privateKeyHex);
+    
+            // Create the key pair from the private key
+            var algorithm = SignatureAlgorithm.Ed25519;
+            var privateKey = Key.Import(algorithm, privateKeyBytes, KeyBlobFormat.RawPrivateKey);
+    
+            // Extract the public key
+            byte[] publicKeyBytes = privateKey.PublicKey.Export(KeyBlobFormat.RawPublicKey);
+    
+            // Encode using your ZBase32 encoder
+            return ZBase32.Encode(publicKeyBytes);
+        }
+        
+        // Create a new random Ed25519 key pair
+        public (string publicKeyZBase32, string privateKeyHex) GenerateRandomEd25519KeyPair()
+        {
+            // Specify the signature algorithm
+            var algorithm = SignatureAlgorithm.Ed25519;
+    
+            // Generate a new random key pair
+            using var key = Key.Create(algorithm,
+                new KeyCreationParameters() { ExportPolicy = KeyExportPolicies.AllowPlaintextExport });
+    
+            // Export the private key in raw format
+            byte[] privateKeyBytes = key.Export(KeyBlobFormat.RawPrivateKey);
+    
+            // Export the public key in raw format
+            byte[] publicKeyBytes = key.PublicKey.Export(KeyBlobFormat.RawPublicKey);
+    
+            // Convert the private key to hex string
+            string privateKeyHex = Convert.ToHexString(privateKeyBytes).ToLower();
+    
+            // Encode the public key using ZBase32
+            string publicKeyZBase32 = ZBase32.Encode(publicKeyBytes);
+    
+            return (publicKeyZBase32, privateKeyHex);
+        }
+
     }
 }
