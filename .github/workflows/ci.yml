@@ -1,0 +1,66 @@
+name: CI Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        target: ${{ matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || matrix.os == 'macos-latest' && 'x86_64-apple-darwin' || 'x86_64-unknown-linux-gnu' }}
+        components: rustfmt, clippy
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build Rust Library
+      run: cargo build --release --verbose
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Copy Library to Test Directory (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cp target/release/libpkarr_ffi.${{ matrix.os == 'macos-latest' && 'dylib' || 'so' }} tests/
+        mkdir -p tests/bin/Debug/net8.0/
+        cp target/release/libpkarr_ffi.${{ matrix.os == 'macos-latest' && 'dylib' || 'so' }} tests/bin/Debug/net8.0/
+
+    - name: Copy Library to Test Directory (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        cp target/release/pkarr_ffi.dll tests/
+        mkdir -p tests/bin/Debug/net8.0/
+        cp target/release/pkarr_ffi.dll tests/bin/Debug/net8.0/
+
+    - name: Restore .NET dependencies
+      run: dotnet restore tests/PkarrTests.csproj
+
+    - name: Build .NET Tests
+      run: dotnet build tests/PkarrTests.csproj --configuration Debug --no-restore
+
+    - name: Run Tests
+      run: dotnet test tests/PkarrTests.csproj --configuration Debug --no-build --verbosity normal
