@@ -1,4 +1,4 @@
-# Pkarr FFI Library
+# Pkarr FFI Library - warning this is still mostly AI generated slop but works.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
