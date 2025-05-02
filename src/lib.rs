@@ -88,12 +88,12 @@ fn rdata_to_string(rdata: &RData) -> (u16, String) {
         RData::A(A { address }) => (1, format!("{:?}", std::net::Ipv4Addr::from(*address))),
         RData::AAAA(AAAA { address }) => (28, format!("{:?}", std::net::Ipv6Addr::from(*address))),
         RData::TXT(txt) => (16, txt.clone().try_into().unwrap_or_else(|_| "Invalid TXT".to_string())),
-        RData::CNAME(cname) => (5, cname.0.to_string()),
-        RData::MX(mx) => (15, format!("Preference: {}, Exchange: {}", mx.preference, mx.exchange.0)),
-        RData::NS(ns) => (2, ns.0.to_string()),
-        RData::PTR(ptr) => (12, ptr.0.to_string()),
+        RData::CNAME(cname) => (5, cname.to_string()),
+        RData::MX(mx) => (15, format!("Preference: {}, Exchange: {}", mx.preference, mx.exchange.to_string())),
+        RData::NS(ns) => (2, ns.to_string()),
+        RData::PTR(ptr) => (12, ptr.to_string()),
         RData::SOA(soa) => (6, format!("MNAME: {}, RNAME: {}, SERIAL: {}, REFRESH: {}, RETRY: {}, EXPIRE: {}, MINIMUM: {}", 
-            soa.mname.0, soa.rname.0, soa.serial, soa.refresh, soa.retry, soa.expire, soa.minimum)),
+            soa.mname.to_string(), soa.rname.to_string(), soa.serial, soa.refresh, soa.retry, soa.expire, soa.minimum)),
         _ => (0, format!("Unsupported RData type: {:?}", rdata)),
     }
 }
