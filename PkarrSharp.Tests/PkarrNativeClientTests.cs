@@ -1,11 +1,14 @@
+using System.Buffers.Binary;
 using System.Net;
+using System.Text;
 using NSec.Cryptography;
 using PkarrSharp;
 using ServiceStack.Text; 
 // using Xunit;
 // using Assert = NUnit.Assert;
 using NUnit;
-using NUnit.Framework; 
+using NUnit.Framework;
+using Xunit;
 using Assert = NUnit.Framework.Assert;
 
 namespace PkarrSharp.Tests;
@@ -51,6 +54,11 @@ public class PkarrNativeClientTests
 
         // Act
         // Encode a DNS packet with a TXT record
+        var record = new DnsPacket();
+        // record.Answers.Add(new DnsTxtRecord(domainName, ttl, new[] { textValue },));
+        record.Header.AnswerCount = 1; 
+        var encoded = DnsPacketEncoder.Encode(record);
+        
         byte[] encodedDnsPacket = DnsPacketEncoder.CreateTxtRecordPacket(domainName, textValue, ttl);
         var dnsPacket = DnsPacketDecoder.DecodeTyped(encodedDnsPacket);
         dnsPacket.PrintDump();
@@ -65,6 +73,47 @@ public class PkarrNativeClientTests
         var pkarrClient = new PkarrRelayClient(new PkarrClientSettings());
         var response = await pkarrClient.PutPkarrDns(keys.publicKeyZBase32, encodePkarrPacket);
         response.PrintDump();
+    }
+
+    [Test]
+    public async Task TestDnsGen()
+    {
+        var keys = GenerateRandomEd25519KeyPair();
+        // Arrange
+        string domainName = $"test.{keys.publicKeyZBase32}";
+        string textValue = "Hello, Pkarr!";
+        uint ttl = 60;
+
+        // Act
+        // Encode a DNS packet with a TXT record
+        var record = new DnsPacket();
+        var d = Encoding.UTF8.GetBytes(textValue);
+        var l = (byte)d.Length;
+        BinaryPrimitives.ReverseEndianness(l);
+        byte[] result = new byte[1 + d.Length];
+        result[0] = BinaryPrimitives.ReverseEndianness(l);
+        Buffer.BlockCopy(d, 0, result, 1, d.Length);  // Copy data array into result starting at index 1
+
+        record.Answers.Add(new DnsTxtRecord(domainName, 1, ttl, result));
+
+    record.Header.AnswerCount = 1;
+        record.Header.Flags = 33792; //?
+        var encoded = DnsPacketEncoder.Encode(record);
+        
+        byte[] encodedDnsPacket = DnsPacketEncoder.CreateTxtRecordPacket(domainName, textValue, ttl);
+        var dnsPacket = DnsPacketDecoder.DecodeTyped(encodedDnsPacket);
+        dnsPacket.PrintDump();
+
+        var publicKeyBytes = ZBase32.Decode(keys.publicKeyZBase32);
+        var privateKeyBytes = Convert.FromHexString(keys.privateKeyHex);
+        byte[] encodePkarrPacket =
+            PkarrSignedPacket.CreateSignedPacket(encodedDnsPacket, privateKeyBytes, publicKeyBytes);
+        var decodedPecket = PkarrSignedPacket.ParseRelayResponse(encodePkarrPacket, publicKeyBytes);
+        decodedPecket.PrintDump();
+        var dnsPacket3 = DnsPacketDecoder.DecodeTyped(decodedPecket.EncodedDnsRecords); 
+        var e = DnsPacketEncoder.Encode(dnsPacket3);
+        Assert.AreEqual(e,decodedPecket.EncodedDnsRecords);
+        Assert.AreEqual(encoded,encodedDnsPacket);
     }
      
     

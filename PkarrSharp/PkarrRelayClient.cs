@@ -59,6 +59,13 @@ public class PkarrRelayClient : IDisposable
 
         return (pkarrSignedPacket, dnsPacket);
     }
+
+     public async Task<bool> PutPkarrDns(byte[] privateKey, byte[] publicKey, DnsPacket dnsPacket)
+    {
+        var encodedDns = DnsPacketEncoder.Encode(dnsPacket);
+        var signedPacket = PkarrSignedPacket.CreateSignedPacket(encodedDns, privateKey, publicKey);
+        return await PutPkarrDns(ZBase32.Encode(publicKey), signedPacket);
+    }
     
     /// <summary>
     /// Publishes a signed DNS packet to the Pkarr relay

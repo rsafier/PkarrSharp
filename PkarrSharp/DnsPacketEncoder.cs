@@ -12,6 +12,91 @@ public static class DnsPacketEncoder
     private const ushort QueryTypeA = 1;     // A Record
     private const ushort QueryTypeTXT = 16;  // TXT Record
     private const ushort QueryClassIN = 1;   // Internet class
+    
+    /// <summary>
+    /// Encodes a DnsPacket object into a byte array.
+    /// </summary>
+    /// <param name="packet">The DnsPacket to encode</param>
+    /// <returns>A byte array containing the encoded DNS packet</returns>
+    public static byte[] Encode(DnsPacket packet)
+    {
+        using var memoryStream = new MemoryStream();
+        using var writer = new BinaryWriter(memoryStream);
+        
+        // Write DNS header
+        writer.Write(BinaryPrimitives.ReverseEndianness(packet.Header.Id));
+        writer.Write(BinaryPrimitives.ReverseEndianness(packet.Header.Flags));
+        writer.Write(BinaryPrimitives.ReverseEndianness(packet.Header.QuestionCount));
+        writer.Write(BinaryPrimitives.ReverseEndianness(packet.Header.AnswerCount));
+        writer.Write(BinaryPrimitives.ReverseEndianness(packet.Header.AuthorityCount));
+        writer.Write(BinaryPrimitives.ReverseEndianness(packet.Header.AdditionalCount));
+        
+        // Write Questions section
+        foreach (var question in packet.Questions)
+        {
+            WriteDomainName(writer, question.Name);
+            writer.Write(BinaryPrimitives.ReverseEndianness(question.Type));
+            writer.Write(BinaryPrimitives.ReverseEndianness(question.Class));
+        }
+        
+        // Write Answer records
+        WriteResourceRecords(writer, packet.Answers);
+        
+        // Write Authority records
+        WriteResourceRecords(writer, packet.Authority);
+        
+        // Write Additional records
+        WriteResourceRecords(writer, packet.Additional);
+        
+        return memoryStream.ToArray();
+    }
+    
+    private static void WriteResourceRecords(BinaryWriter writer, List<DnsResourceRecord> records)
+    {
+        foreach (var record in records)
+        {
+            // Write the name
+            WriteDomainName(writer, record.Name);
+            
+            // Write record type
+            writer.Write(BinaryPrimitives.ReverseEndianness(record.Type));
+            
+            // Write record class
+            writer.Write(BinaryPrimitives.ReverseEndianness(record.Class));
+            
+            // Write TTL
+            writer.Write(BinaryPrimitives.ReverseEndianness(record.TTL));
+            
+            // Special handling for TXT records
+            if (record is DnsTxtRecord txtRecord)
+            {
+                // Calculate total length of all text strings with their length bytes
+                int totalLength = 0;
+                foreach (var text in txtRecord.TextValues)
+                {
+                    var textBytes = Encoding.UTF8.GetBytes(text);
+                    totalLength += textBytes.Length + 1; // +1 for the length byte
+                }
+                
+                // Write data length
+                writer.Write(BinaryPrimitives.ReverseEndianness((ushort)totalLength));
+                
+                // Write each text string in [length][data] format
+                foreach (var text in txtRecord.TextValues)
+                {
+                    var textBytes = Encoding.UTF8.GetBytes(text);
+                    writer.Write((byte)textBytes.Length);
+                    writer.Write(textBytes);
+                }
+            }
+            else
+            {
+                // For all other record types, just write the data length and raw data
+                writer.Write(BinaryPrimitives.ReverseEndianness(record.DataLength));
+                writer.Write(record.Data);
+            }
+        }
+    }
 
     /// <summary>
     /// Creates a DNS packet with a TXT record.
@@ -135,6 +220,7 @@ public static class DnsPacketEncoder
 
     /// <summary>
     /// Writes a domain name in DNS packet format.
+    /// Used both for creating new packets and encoding existing DnsPacket objects.
     /// </summary>
     /// <param name="writer">The binary writer to write to</param>
     /// <param name="domainName">The domain name to write</param>

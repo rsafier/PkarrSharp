@@ -6,7 +6,7 @@ namespace PkarrSharp;
 // Structured DNS packet representation
 public class DnsPacket
 {
-    public DnsHeader Header { get; set; }
+    public DnsHeader Header { get; set; } = new DnsHeader();
     public List<DnsQuestion> Questions { get; set; } = new();
     public List<DnsResourceRecord> Answers { get; set; } = new();
     public List<DnsResourceRecord> Authority { get; set; } = new();
@@ -133,7 +133,7 @@ public class DnsTxtRecord : DnsResourceRecord
         Type = 16;
         Class = @class;
         TTL = ttl;
-        DataLength = (ushort)data.Length;
+        DataLength = (ushort)(data.Length );
         Data = data;
 
         try

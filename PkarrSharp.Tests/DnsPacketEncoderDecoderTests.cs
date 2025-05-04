@@ -116,7 +116,10 @@ public class DnsPacketEncoderDecoderTests
         // Act
         byte[] encodedPacket = DnsPacketEncoder.CreateTxtRecordPacket(domainName, textValue, ttl);
         DnsPacket decodedPacket = DnsPacketDecoder.DecodeTyped(encodedPacket);
-
+        
+        var reEncoded =    DnsPacketEncoder.Encode(decodedPacket);
+        Assert.Equal(encodedPacket, reEncoded);
+        
         // Assert
         Assert.NotNull(decodedPacket);
         Assert.Single(decodedPacket.Answers);
