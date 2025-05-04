@@ -47,24 +47,28 @@ public class PkarrNativeClientTests
     public async Task TestPkarrPut()
     {
         var keys = GenerateRandomEd25519KeyPair();
+        
+        var publicKeyBytes = ZBase32.Decode(keys.publicKeyZBase32);
+        var privateKeyBytes = Convert.FromHexString(keys.privateKeyHex);
+
         // Arrange
         string domainName = $"test.{keys.publicKeyZBase32}";
         string textValue = "Hello, Pkarr!";
         uint ttl = 60;
 
         // Act
+        
         // Encode a DNS packet with a TXT record
         var record = new DnsPacket();
-        // record.Answers.Add(new DnsTxtRecord(domainName, ttl, new[] { textValue },));
-        record.Header.AnswerCount = 1; 
-        var encoded = DnsPacketEncoder.Encode(record);
+        record.Header = new DnsHeader { Flags = 0x8400 }; // Standard query response, no error
+        record.AddTxtRecord(domainName,textValue,ttl); 
         
-        byte[] encodedDnsPacket = DnsPacketEncoder.CreateTxtRecordPacket(domainName, textValue, ttl);
-        var dnsPacket = DnsPacketDecoder.DecodeTyped(encodedDnsPacket);
-        dnsPacket.PrintDump();
+        var encodedDnsPacket = DnsPacketEncoder.Encode(record);
+        
+        // byte[] encodedDnsPacket = DnsPacketEncoder.CreateTxtRecordPacket(domainName, textValue, ttl);
+        // var dnsPacket = DnsPacketDecoder.DecodeTyped(encodedDnsPacket);
+        // dnsPacket.PrintDump();
 
-        var publicKeyBytes = ZBase32.Decode(keys.publicKeyZBase32);
-        var privateKeyBytes = Convert.FromHexString(keys.privateKeyHex);
         byte[] encodePkarrPacket =
             PkarrSignedPacket.CreateSignedPacket(encodedDnsPacket, privateKeyBytes, publicKeyBytes);
         var decodedPecket = PkarrSignedPacket.ParseRelayResponse(encodePkarrPacket, publicKeyBytes);
@@ -75,6 +79,19 @@ public class PkarrNativeClientTests
         response.PrintDump();
     }
 
+    [Test]
+    public async Task TestPkarrPutMulti()
+    {
+        var keys = GenerateRandomEd25519KeyPair();
+        
+        var publicKeyBytes = ZBase32.Decode(keys.publicKeyZBase32);
+        var privateKeyBytes = Convert.FromHexString(keys.privateKeyHex);
+        var pkarrClient = new PkarrRelayClient(new PkarrClientSettings());
+        var response = await pkarrClient.PutMultipleTxtRecords(keys.publicKeyZBase32,privateKeyBytes,new Dictionary<string,string> {{"pkarr","test"},{"foo","bar"}});
+        keys.publicKeyZBase32.PrintDump();
+        Assert.IsTrue(response);
+    }
+    
     [Test]
     public async Task TestDnsGen()
     {
@@ -87,17 +104,9 @@ public class PkarrNativeClientTests
         // Act
         // Encode a DNS packet with a TXT record
         var record = new DnsPacket();
-        var d = Encoding.UTF8.GetBytes(textValue);
-        var l = (byte)d.Length;
-        BinaryPrimitives.ReverseEndianness(l);
-        byte[] result = new byte[1 + d.Length];
-        result[0] = BinaryPrimitives.ReverseEndianness(l);
-        Buffer.BlockCopy(d, 0, result, 1, d.Length);  // Copy data array into result starting at index 1
-
-        record.Answers.Add(new DnsTxtRecord(domainName, 1, ttl, result));
-
-    record.Header.AnswerCount = 1;
-        record.Header.Flags = 33792; //?
+        record.Header = new DnsHeader { Flags = 0x8400 }; // Standard query response, no error
+        record.AddTxtRecord(domainName,textValue,ttl); 
+        
         var encoded = DnsPacketEncoder.Encode(record);
         
         byte[] encodedDnsPacket = DnsPacketEncoder.CreateTxtRecordPacket(domainName, textValue, ttl);

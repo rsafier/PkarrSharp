@@ -1,7 +1,23 @@
+using System.Buffers.Binary;
 using System.Net;
 using System.Text;
 
 namespace PkarrSharp;
+
+public static class DnsPacketExtensions
+{
+    public static void AddTxtRecord(this DnsPacket packet, string name, string value, uint ttl)
+    {
+        var data = Encoding.UTF8.GetBytes(value); 
+        var len = (byte)data.Length; 
+        byte[] result = new byte[1 + data.Length];
+        result[0] = BinaryPrimitives.ReverseEndianness(len);
+        Buffer.BlockCopy(data, 0, result, 1, data.Length);  // Copy data array into result starting at index 1
+        var txtRecord = new DnsTxtRecord(name, 1, ttl, result);
+        packet.Answers.Add(txtRecord);
+        packet.Header.AnswerCount++;
+    }
+}
 
 // Structured DNS packet representation
 public class DnsPacket
