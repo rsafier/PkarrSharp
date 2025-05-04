@@ -60,7 +60,7 @@ jobs:
       run: dotnet restore PkarrSharp.Tests/PkarrSharp.Tests.csproj
 
     - name: Build .NET Tests
-      run: dotnet build PkarrSharp.Tests/PkarrSharp.Tests --configuration Debug --no-restore
+      run: dotnet build PkarrSharp.Tests/PkarrSharp.Tests.csproj --configuration Debug --no-restore
 
     - name: Run Tests
-      run: dotnet test PkarrSharp.Tests/PkarrSharp.Tests --configuration Debug --no-build --verbosity normal
+      run: dotnet test PkarrSharp.Tests/PkarrSharp.Tests.csproj --configuration Debug --no-build --verbosity normal
