@@ -1,19 +1,42 @@
-using System.Text;
-
+using System.Buffers;
+using System.Runtime.CompilerServices;
+ 
 namespace PkarrSharp;
 
 public static class ZBase32
 {
     private const string Alphabet = "ybndrfg8ejkmcpqxot1uwisza345h769";
 
-    public static string Encode(byte[] data)
+    // Pre-calculated lookup table for decoding
+    private static readonly int[] LookupTable = CreateLookupTable();
+
+    private static int[] CreateLookupTable()
     {
-        if (data == null || data.Length == 0)
+        var lookup = new int[128];
+        Array.Fill(lookup, -1);
+
+        for (var i = 0; i < Alphabet.Length; i++)
+            lookup[Alphabet[i]] = i;
+
+        return lookup;
+    }
+
+    public static string Encode(ReadOnlySpan<byte> data)
+    {
+        if (data.IsEmpty)
             return string.Empty;
 
-        var result = new StringBuilder();
+        // Calculate output length: each 5 bits becomes one character
+        // 8 bits per byte * data.Length bits total / 5 bits per output char, rounded up
+        var outputLength = (data.Length * 8 + 4) / 5;
+
+        // Rent a char array for the result to avoid allocating a new one
+        var rentedArray = ArrayPool<char>.Shared.Rent(outputLength);
+        var result = rentedArray.AsSpan(0, outputLength);
+
         var bitIndex = 0;
         var buffer = 0;
+        var resultIndex = 0;
 
         foreach (var b in data)
         {
@@ -24,7 +47,7 @@ public static class ZBase32
             {
                 bitIndex -= 5;
                 var index = (buffer >> bitIndex) & 31;
-                result.Append(Alphabet[index]);
+                result[resultIndex++] = Alphabet[index];
             }
         }
 
@@ -32,37 +55,47 @@ public static class ZBase32
         if (bitIndex > 0)
         {
             var index = (buffer << (5 - bitIndex)) & 31;
-            result.Append(Alphabet[index]);
+            result[resultIndex++] = Alphabet[index];
         }
 
-        return result.ToString();
+        // Create string from the filled portion of the array
+        var encodedString = new string(result.Slice(0, resultIndex));
+
+        // Return the array to the pool
+        ArrayPool<char>.Shared.Return(rentedArray);
+
+        return encodedString;
     }
 
-    public static byte[] Decode(string encoded)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string Encode(byte[] data)
     {
-        if (string.IsNullOrEmpty(encoded))
+        return Encode(data.AsSpan());
+    }
+
+    public static byte[] Decode(ReadOnlySpan<char> encoded)
+    {
+        if (encoded.IsEmpty)
             return Array.Empty<byte>();
 
-        // Create a lookup table for faster character to value conversion
-        var lookup = new int[128];
-        for (var i = 0; i < lookup.Length; i++)
-            lookup[i] = -1;
+        // Calculate max output size (approximately)
+        var maxOutputSize = encoded.Length * 5 / 8 + 1;
 
-        for (var i = 0; i < Alphabet.Length; i++)
-            lookup[Alphabet[i]] = i;
+        // Rent a byte array for the result to avoid allocating a new one
+        var rentedArray = ArrayPool<byte>.Shared.Rent(maxOutputSize);
+        var result = rentedArray.AsSpan(0, maxOutputSize);
 
-        // Calculate output length (approximately)
-        var result = new byte[encoded.Length * 5 / 8 + 1];
         var bitIndex = 0;
         var buffer = 0;
         var resultIndex = 0;
 
         foreach (var c in encoded)
         {
-            var value = c < lookup.Length ? lookup[c] : -1;
-            if (value == -1)
+            // Validate the character and get its value
+            if (c >= 128 || LookupTable[c] == -1)
                 throw new ArgumentException($"Invalid zbase32 character: {c}");
 
+            var value = LookupTable[c];
             buffer = (buffer << 5) | value;
             bitIndex += 5;
 
@@ -73,8 +106,19 @@ public static class ZBase32
             }
         }
 
-        // Resize the array to the actual length
-        Array.Resize(ref result, resultIndex);
-        return result;
+        // Copy only the used portion of the result
+        var finalResult = result.Slice(0, resultIndex).ToArray();
+
+        // Return the array to the pool
+        ArrayPool<byte>.Shared.Return(rentedArray);
+
+        return finalResult;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static byte[] Decode(string encoded)
+    {
+        return Decode(encoded.AsSpan());
     }
 }
+

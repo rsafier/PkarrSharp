@@ -212,125 +212,6 @@ public class DnsHttpsRecord : DnsResourceRecord
 
 public class DnsPacketDecoder
 {
-    // public static void Decode(byte[] data)
-    // {
-    //     int offset = 0;
-    //
-    //     // DNS Header
-    //     ushort id = ReadUInt16(data, ref offset);
-    //     ushort flags = ReadUInt16(data, ref offset);
-    //     ushort qdCount = ReadUInt16(data, ref offset);
-    //     ushort anCount = ReadUInt16(data, ref offset);
-    //     ushort nsCount = ReadUInt16(data, ref offset);
-    //     ushort arCount = ReadUInt16(data, ref offset);
-    //
-    //     Console.WriteLine($"ID: {id}, Flags: 0x{flags:X4}");
-    //     Console.WriteLine($"Questions: {qdCount}, Answers: {anCount}, Authority: {nsCount}, Additional: {arCount}");
-    //     Console.WriteLine(); // Add a blank line for clarity
-    //
-    //     // Questions
-    //     for (int i = 0; i < qdCount; i++)
-    //     {
-    //          Console.WriteLine($"--- Question {i + 1} ---");
-    //         string qName = ReadDomainName(data, ref offset);
-    //         ushort qType = ReadUInt16(data, ref offset);
-    //         ushort qClass = ReadUInt16(data, ref offset);
-    //
-    //         Console.WriteLine($"  Name: {qName}");
-    //         Console.WriteLine($"  Type: {qType}");
-    //         Console.WriteLine($"  Class: {qClass}");
-    //         Console.WriteLine();
-    //     }
-    //
-    //     // Answers
-    //     for (int i = 0; i < anCount; i++)
-    //     {
-    //          Console.WriteLine($"--- Answer {i + 1} ---");
-    //         string rrName = ReadDomainName(data, ref offset);
-    //         ushort rrType = ReadUInt16(data, ref offset);
-    //         ushort rrClass = ReadUInt16(data, ref offset);
-    //         uint rrTTL = ReadUInt32(data, ref offset); // Use new ReadUInt32 helper
-    //         ushort rdLength = ReadUInt16(data, ref offset);
-    //
-    //         Console.WriteLine($"  Name: {rrName}");
-    //         Console.WriteLine($"  Type: {rrType}");
-    //         Console.WriteLine($"  Class: {rrClass}");
-    //         Console.WriteLine($"  TTL: {rrTTL}");
-    //         Console.WriteLine($"  RDLENGTH: {rdLength}");
-    //
-    //         // Ensure we don't read past the end of the data FOR RDATA
-    //         int rdataStartOffset = offset;
-    //         if (rdataStartOffset + rdLength > data.Length)
-    //         {
-    //             Console.WriteLine($"  [Error: RDATA length {rdLength} exceeds packet boundary at offset {rdataStartOffset}]");
-    //             offset = data.Length; // Move offset to end to stop further parsing
-    //             break;
-    //         }
-    //
-    //         byte[] rdata = new byte[rdLength];
-    //         Buffer.BlockCopy(data, rdataStartOffset, rdata, 0, rdLength);
-    //         offset += rdLength; // Advance main offset past RDATA
-    //
-    //         // Basic RDATA display (Hex)
-    //          Console.WriteLine($"  RDATA (Hex): {BitConverter.ToString(rdata).Replace("-", "")}");
-    //
-    //         // Decode specific types
-    //         if (rrType == 16 && rdLength > 0) // TXT Record
-    //         {
-    //             try
-    //             {
-    //                 int txtOffset = 0;
-    //                 var txtParts = new List<string>();
-    //                 while (txtOffset < rdLength)
-    //                 {
-    //                     byte txtLen = rdata[txtOffset++];
-    //                     if (txtOffset + txtLen > rdLength)
-    //                     {
-    //                          Console.WriteLine("    [Malformed TXT RDATA: length byte exceeds RDLENGTH]");
-    //                         break;
-    //                     }
-    //                     // Using UTF8, though ASCII is common too. Adjust if needed.
-    //                     txtParts.Add(Encoding.UTF8.GetString(rdata, txtOffset, txtLen));
-    //                     txtOffset += txtLen;
-    //                 }
-    //                  Console.WriteLine($"  RDATA (Decoded TXT): {string.Join("; ", txtParts)}");
-    //             }
-    //             catch (Exception ex)
-    //             {
-    //                  Console.WriteLine($"    [Error decoding TXT RDATA: {ex.Message}]");
-    //             }
-    //         }
-    //          else if (rrType == 65 && rdLength >= 2) // HTTPS/SVCB Record (Type 65) - Basic assumption
-    //          {
-    //              try
-    //              {
-    //                  int currentRdataOffset = 0; // Use offset relative to rdata buffer
-    //                  // Read 2-byte priority (Big Endian)
-    //                  ushort priority = (ushort)((rdata[currentRdataOffset] << 8) | rdata[currentRdataOffset + 1]);
-    //                  currentRdataOffset += 2;
-    //
-    //                  // Decode the rest as a domain name sequence
-    //                  // Adjust offset within rdata buffer BEFORE calling
-    //                  int targetNameStartOffset = currentRdataOffset;
-    //                  string targetName = DecodeDomainNameSequence(rdata, ref targetNameStartOffset, rdLength); // Pass rdata buffer and its length
-    //
-    //                  Console.WriteLine($"  RDATA (Decoded Type 65): Priority={priority}, Target={targetName}");
-    //                  // Note: We don't update the main offset here, as it was already advanced past the full RDATA block earlier.
-    //              }
-    //              catch (Exception ex)
-    //              {
-    //                   Console.WriteLine($"    [Error decoding Type 65 RDATA: {ex.Message}]");
-    //              }
-    //          }
-    //         // Add more handlers for other rrTypes (A, AAAA, CNAME, etc.) if needed
-    //
-    //         Console.WriteLine(); // Add a blank line between answers
-    //     }
-    //
-    //     // TODO: Add loops for Authority (nsCount) and Additional (arCount) records if needed
-    //     // These follow the same format as Answer records.
-    // }
-
     private static ushort ReadUInt16(byte[] data, ref int offset)
     {
         if (offset + 2 > data.Length) throw new IndexOutOfRangeException("Attempted to read UInt16 past end of data.");
@@ -349,39 +230,6 @@ public class DnsPacketDecoder
         offset += 4;
         return val;
     }
-
-    // // Decodes a domain name sequence (labels prefixed by length bytes)
-    // // Used for Type 65 RDATA target names. Does not handle compression or add dots.
-    // // Modified to take the starting offset within the buffer and the total length of the sequence section.
-    // private static string DecodeDomainNameSequence(byte[] buffer, ref int offsetInRdata, int rdataTotalLength)
-    // {
-    //     StringBuilder name = new StringBuilder();
-    //     int endOfRdataInBuffer = rdataTotalLength; // Calculate the end index within the rdata buffer
-    //
-    //     // Stop when offset reaches the end of the rdata buffer portion OR we hit a null terminator
-    //     while (offsetInRdata < endOfRdataInBuffer)
-    //     {
-    //          // Ensure we don't read len byte past the designated rdata section
-    //          if (offsetInRdata >= buffer.Length) throw new IndexOutOfRangeException("RDATA sequence read out of bounds (len byte).");
-    //
-    //         byte len = buffer[offsetInRdata++]; // Read length byte and advance offset
-    //
-    //         if (len == 0) break; // Null terminator, end of sequence
-    //
-    //         // Check if the label length extends beyond the rdata section
-    //         if (offsetInRdata + len > endOfRdataInBuffer)
-    //             throw new IndexOutOfRangeException($"RDATA label length ({len}) exceeds RDATA boundary at offset {offsetInRdata}.");
-    //         // Also check against underlying data array just in case (should be redundant if rdataTotalLength is correct)
-    //          if (offsetInRdata + len > buffer.Length)
-    //             throw new IndexOutOfRangeException($"RDATA label length ({len}) exceeds main data boundary at offset {offsetInRdata}.");
-    //
-    //
-    //         // Use ASCII, common for domain names. Might need adjustment.
-    //         name.Append(Encoding.ASCII.GetString(buffer, offsetInRdata, len));
-    //         offsetInRdata += len; // Advance offset past the label content
-    //     }
-    //     return name.ToString();
-    // }
 
     // Public version for use by record objects
     public static string DecodeDomainNameSequenceForObject(byte[] buffer, ref int offsetInRdata, int rdataTotalLength)
@@ -419,7 +267,6 @@ public class DnsPacketDecoder
 
         return name.ToString();
     }
-
 
     // Main function to read domain names, handling compression and adding dots
     private static string ReadDomainName(byte[] data, ref int offset)

@@ -1,7 +1,7 @@
 using System.Text;
 using NSec.Cryptography;
 
-namespace PkarrSharp; // Or your preferred namespace
+namespace PkarrSharp; 
 
 /// <summary>
 ///     Represents the decoded content of a pkarr HTTP response
@@ -78,13 +78,21 @@ public class PkarrSignedPacket
     }
 
     /// <summary>
-    ///     Parses the Base64 encoded payload from a pkarr TXT record.
+    ///     Parses a Relay response from the signed packet bytes and optionally verifies the signature.
     /// </summary>
-    /// <param name="base64Payload">The Base64 encoded string (the value after "pkarr=").</param>
-    /// <returns>A PkarrSignedPacket instance containing the parsed data.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if base64Payload is null or empty.</exception>
-    /// <exception cref="ArgumentException">Thrown if the payload is invalid Base64 or too short.</exception>
-    public static PkarrSignedPacket Parse(byte[] signedPacketBytes, byte[]? nodePublicKey = null)
+    /// <param name="signedPacketBytes">The byte array containing the signed DNS packet to be parsed.</param>
+    /// <param name="nodePublicKey">
+    ///     The public key of the node used to verify the packet's signature.
+    ///     If null, signature validation will be skipped.
+    /// </param>
+    /// <returns>
+    ///     An instance of <see cref="PkarrSignedPacket" /> representing the parsed signed packet
+    /// </returns>
+    /// <exception cref="Exception">
+    ///     Thrown if the signature is invalid and a public key is provided,
+    ///     or if any other parsing error occurs.
+    /// </exception>
+    public static PkarrSignedPacket ParseRelayResponse(byte[] signedPacketBytes, byte[]? nodePublicKey = null)
     {
         // 1. Extract Signature
         var signature = signedPacketBytes.Take(SignatureLength).ToArray();
@@ -104,7 +112,7 @@ public class PkarrSignedPacket
         var packet = new PkarrSignedPacket(signature, timestampMicroseconds, encodedRecords, false, nodePublicKey);
         // Get the bencoded signable data as per BEP-0044
         var bencodedData = GetBencodedSignableData(timestampMicroseconds, encodedRecords);
-        // Verify signature if public key is provided
+        // Verify signature if public key is provided, will throw if doesn't match
         if (nodePublicKey != null)
             try
             {
@@ -114,9 +122,8 @@ public class PkarrSignedPacket
             }
             catch (Exception ex)
             {
-                // Log verification error
-                Console.WriteLine($"Signature verification error: {ex.Message}");
-                packet.SignatureValidated = false;
+                throw new Exception(
+                    $"Error verifying signature of Pkarr signed packet for {ZBase32.Encode(nodePublicKey)}", ex);
             }
 
         return packet;

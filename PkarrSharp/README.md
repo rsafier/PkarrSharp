@@ -2,9 +2,14 @@
 
 #### Native
 
-- [x] Pkarr lookups via Relays
+- [x] PkarrClient - for Relays
+    - [x] Lookup by Public key
+    - [ ] Submit record
+- [x] Basic DNS Decoder
+- [x] PkarrSignedPacket decoder
+- [x] ZBase32 helper
 
-#### FFI Export
+#### FFI Export (wip - might be different nuget package to keep this lean)
 
 - Platforms
     - [ ] Linux
