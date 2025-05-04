@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text;
 using NSec.Cryptography;
 
@@ -127,5 +128,138 @@ public class PkarrSignedPacket
             }
 
         return packet;
+    }
+
+    /// <summary>
+    /// Creates a signed Pkarr packet ready for publishing to a relay
+    /// </summary>
+    /// <param name="dnsPacket">The DNS packet to include in the signed packet</param>
+    /// <param name="privateKey">The Ed25519 private key in raw format</param>
+    /// <param name="publicKey">The corresponding Ed25519 public key in raw format</param>
+    /// <returns>The complete signed packet bytes ready for transmission</returns>
+    public static byte[] CreateSignedPacket(byte[] dnsPacket, byte[] privateKey, byte[] publicKey)
+    {
+        if (dnsPacket == null || dnsPacket.Length == 0)
+            throw new ArgumentNullException(nameof(dnsPacket), "DNS packet cannot be null or empty");
+        
+        if (privateKey == null || privateKey.Length != 32)
+            throw new ArgumentException("Private key must be 32 bytes", nameof(privateKey));
+        
+        if (publicKey == null || publicKey.Length != 32)
+            throw new ArgumentException("Public key must be 32 bytes", nameof(publicKey));
+
+        // Generate current timestamp in microseconds
+        ulong timestampMicros = (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000;
+        
+        // Prepare the bencoded data to sign
+        byte[] bencodedData = GetBencodedSignableData(timestampMicros, dnsPacket);
+        
+        try
+        {
+            // Import the private key
+            var keypair = Key.Import(SignatureAlgorithm.Ed25519, privateKey, KeyBlobFormat.RawPrivateKey);
+            
+            // Sign the bencoded data
+            byte[] signature = SignatureAlgorithm.Ed25519.Sign(keypair, bencodedData);
+            
+            // Create the complete packet: signature + timestamp + dns packet
+            using var memoryStream = new MemoryStream(signature.Length + 8 + dnsPacket.Length);
+            
+            // Write signature (64 bytes)
+            memoryStream.Write(signature, 0, signature.Length);
+            
+            // Write timestamp (8 bytes) in big-endian order
+            byte[] timestampBytes = new byte[8];
+            BinaryPrimitives.WriteUInt64BigEndian(timestampBytes, timestampMicros);
+            memoryStream.Write(timestampBytes, 0, timestampBytes.Length);
+            
+            // Write DNS packet
+            memoryStream.Write(dnsPacket, 0, dnsPacket.Length);
+            
+            return memoryStream.ToArray();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to create signed packet", ex);
+        }
+    }
+
+    /// <summary>
+    /// Creates a signed TXT record packet for Pkarr
+    /// </summary>
+    /// <param name="publicKeyZBase32">The public key in ZBase32 format</param>
+    /// <param name="privateKey">The private key in raw binary format</param>
+    /// <param name="recordName">The name of the TXT record (e.g., "_foo")</param>
+    /// <param name="recordValue">The value of the TXT record</param>
+    /// <param name="ttl">Time to live in seconds</param>
+    /// <returns>The complete signed packet bytes ready for transmission</returns>
+    public static byte[] CreateSignedTxtRecord(string publicKeyZBase32, byte[] privateKey, string recordName, string recordValue, uint ttl = 30)
+    {
+        // Decode the public key from ZBase32
+        byte[] publicKey = ZBase32.Decode(publicKeyZBase32);
+        
+        // Ensure the record name doesn't have a trailing dot
+        recordName = recordName.TrimEnd('.');
+        
+        // Construct the full domain name
+        string fullDomain = $"{recordName}.{publicKeyZBase32}";
+        
+        // Create the DNS packet with the TXT record
+        byte[] dnsPacket = DnsPacketEncoder.CreateTxtRecordPacket(fullDomain, recordValue, ttl);
+        
+        // Sign the packet
+        return CreateSignedPacket(dnsPacket, privateKey, publicKey);
+    }
+    
+    /// <summary>
+    /// Creates a signed packet with multiple TXT records
+    /// </summary>
+    /// <param name="publicKeyZBase32">The public key in ZBase32 format</param>
+    /// <param name="privateKey">The private key in raw binary format</param>
+    /// <param name="records">Dictionary of record names to values</param>
+    /// <param name="ttl">Time to live in seconds</param>
+    /// <returns>The complete signed packet bytes ready for transmission</returns>
+    public static byte[] CreateSignedMultiTxtRecords(string publicKeyZBase32, byte[] privateKey, Dictionary<string, string> records, uint ttl = 30)
+    {
+        if (records == null || records.Count == 0)
+            throw new ArgumentException("Records dictionary cannot be null or empty", nameof(records));
+            
+        // Decode the public key from ZBase32
+        byte[] publicKey = ZBase32.Decode(publicKeyZBase32);
+        
+        // Process records to include the domain
+        var processedRecords = new Dictionary<string, string>();
+        foreach (var record in records)
+        {
+            string recordName = record.Key.TrimEnd('.');
+            string fullDomain = $"{recordName}.{publicKeyZBase32}";
+            processedRecords[fullDomain] = record.Value;
+        }
+        
+        // Create the DNS packet with multiple TXT records
+        byte[] dnsPacket = DnsPacketEncoder.CreateMultiTxtRecordPacket(processedRecords, ttl);
+        
+        // Sign the packet
+        return CreateSignedPacket(dnsPacket, privateKey, publicKey);
+    }
+    
+    /// <summary>
+    /// Checks if the public key in a response packet matches the expected public key
+    /// </summary>
+    /// <param name="packet">The parsed signed packet</param>
+    /// <param name="expectedPublicKey">The expected public key in raw binary format</param>
+    /// <returns>True if the keys match, false otherwise</returns>
+    public static bool VerifyPublicKey(PkarrSignedPacket packet, byte[] expectedPublicKey)
+    {
+        if (packet == null)
+            throw new ArgumentNullException(nameof(packet));
+            
+        if (expectedPublicKey == null || expectedPublicKey.Length != 32)
+            throw new ArgumentException("Expected public key must be 32 bytes", nameof(expectedPublicKey));
+            
+        if (packet.NodePublicKey == null)
+            return false;
+            
+        return expectedPublicKey.SequenceEqual(packet.NodePublicKey);
     }
 }

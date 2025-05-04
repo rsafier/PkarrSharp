@@ -34,19 +34,21 @@ public static class ZBase32
         var rentedArray = ArrayPool<char>.Shared.Rent(outputLength);
         var result = rentedArray.AsSpan(0, outputLength);
 
-        var bitIndex = 0;
-        var buffer = 0;
-        var resultIndex = 0;
+        int bitIndex = 0;
+        ulong buffer = 0;
+        int resultIndex = 0;
 
         foreach (var b in data)
         {
+            // Add 8 more bits to the buffer
             buffer = (buffer << 8) | b;
             bitIndex += 8;
 
+            // Extract as many 5-bit chunks as possible
             while (bitIndex >= 5)
             {
                 bitIndex -= 5;
-                var index = (buffer >> bitIndex) & 31;
+                int index = (int)((buffer >> bitIndex) & 0x1F);
                 result[resultIndex++] = Alphabet[index];
             }
         }
@@ -54,7 +56,7 @@ public static class ZBase32
         // Handle remaining bits if any
         if (bitIndex > 0)
         {
-            var index = (buffer << (5 - bitIndex)) & 31;
+            int index = (int)((buffer << (5 - bitIndex)) & 0x1F);
             result[resultIndex++] = Alphabet[index];
         }
 
@@ -66,6 +68,52 @@ public static class ZBase32
 
         return encodedString;
     }
+
+    // public static string Encode(ReadOnlySpan<byte> data)
+    // {
+    //     if (data.IsEmpty)
+    //         return string.Empty;
+    //
+    //     // Calculate output length: each 5 bits becomes one character
+    //     // 8 bits per byte * data.Length bits total / 5 bits per output char, rounded up
+    //     var outputLength = (data.Length * 8 + 4) / 5;
+    //
+    //     // Rent a char array for the result to avoid allocating a new one
+    //     var rentedArray = ArrayPool<char>.Shared.Rent(outputLength);
+    //     var result = rentedArray.AsSpan(0, outputLength);
+    //
+    //     var bitIndex = 0;
+    //     var buffer = 0;
+    //     var resultIndex = 0;
+    //
+    //     foreach (var b in data)
+    //     {
+    //         buffer = (buffer << 8) | b;
+    //         bitIndex += 8;
+    //
+    //         while (bitIndex >= 5)
+    //         {
+    //             bitIndex -= 5;
+    //             var index = (buffer >> bitIndex) & 31;
+    //             result[resultIndex++] = Alphabet[index];
+    //         }
+    //     }
+    //
+    //     // Handle remaining bits if any
+    //     if (bitIndex > 0)
+    //     {
+    //         var index = (buffer << (5 - bitIndex)) & 31;
+    //         result[resultIndex++] = Alphabet[index];
+    //     }
+    //
+    //     // Create string from the filled portion of the array
+    //     var encodedString = new string(result.Slice(0, resultIndex));
+    //
+    //     // Return the array to the pool
+    //     ArrayPool<char>.Shared.Return(rentedArray);
+    //
+    //     return encodedString;
+    // }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string Encode(byte[] data)
