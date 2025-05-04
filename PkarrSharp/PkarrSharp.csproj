@@ -8,24 +8,23 @@
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(DefineConstants);OSX</DefineConstants>
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(DefineConstants);LINUX</DefineConstants>
         <IsPackable>true</IsPackable>
-        <Version>0.0.1</Version>
+        <Version>0.0.4</Version>
     </PropertyGroup>
 
 
     <ItemGroup>
-        <PackageReference Include="ARSoft.Tools.Net.Dns" Version="2.3.1"/>
         <PackageReference Include="NSec.Cryptography" Version="25.4.0"/>
     </ItemGroup>
-    <ItemGroup>
-        <None Update="libpkarr_ffi.so">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="pkarr_ffi.dll">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="libpkarr_ffi.dylib">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
+    <!--    <ItemGroup>-->
+    <!--        <None Update="libpkarr_ffi.so">-->
+    <!--            <CopyToOutputDirectory>Always</CopyToOutputDirectory>-->
+    <!--        </None>-->
+    <!--        <None Update="pkarr_ffi.dll">-->
+    <!--            <CopyToOutputDirectory>Always</CopyToOutputDirectory>-->
+    <!--        </None>-->
+    <!--        <None Update="libpkarr_ffi.dylib">-->
+    <!--            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
+    <!--        </None>-->
+    <!--    </ItemGroup>-->
 
 </Project>
