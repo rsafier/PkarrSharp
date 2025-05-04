@@ -1,7 +1,8 @@
 using System.Net.Http.Headers;
 using ARSoft.Tools.Net.Dns;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NSec.Cryptography;
+using PkarrSharp;
+using ServiceStack.Text;
 
 namespace PkarrTests;
 
@@ -13,12 +14,12 @@ public class PkarrNativeDecodeTests
     // Add DataRow attribute with the public key string
     [DataRow("o4dksfbqk85ogzdb5osziw6befigbuxmuxkuxq8434q89uj56uyy")]
     [DataRow("gpj136mfx7j8qeu3gurpm9eys7zuyt43pnx5f45bfw1s7thdoa8o")]
-
+    [DataRow("ufibwbmed6jeq9k4p583go95wofakh9fwpp4k734trq79pd9u1uy")]
     public async Task TestReadAndVerifyPkarrRecord(string publicKeyZBase32)
     {
         // 1. Define known pkarr key and relay
         // Using the example key from the provided test logs 
-        string pkarrRelay = "https://relay.pkarr.org"; // Standard pkarr relay
+        var pkarrRelay = "https://relay.pkarr.org"; // Standard pkarr relay
 
         // 2. Perform DoH query
         byte[]? dnsResponsePacket = null;
@@ -43,42 +44,14 @@ public class PkarrNativeDecodeTests
         }
 
         Assert.IsNotNull(dnsResponsePacket, "DNS response packet should not be null.");
-        Assert.IsTrue(dnsResponsePacket.Length > 12, "DNS response packet seems too short."); // Basic check (header size)
-      var x=  PkarrSignedPacket.Parse(dnsResponsePacket);
-        // 3. Parse DNS Response to find TXT record containing "pkarr="
-        string? base64Payload = null;
+        Assert.IsTrue(dnsResponsePacket.Length > 12,
+            "DNS response packet seems too short."); // Basic check (header size)
+        var pkarrSignedPacket = PkarrSignedPacket.Parse(dnsResponsePacket, ZBase32.Decode(publicKeyZBase32));
+        Assert.IsTrue(pkarrSignedPacket.SignatureValidated, "Signature Check Failed");
         try
         {
-            // Use ARSoft.Tools.Net for proper DNS packet parsing with compression support
-             DnsPacketDecoder.Decode(x.EncodedDnsRecords);
-           //  var dnsMessage = DnsMessage.Parse(x.EncodedDnsRecords); 
-           //Console.WriteLine($"Number of answer records: {dnsMessage.AnswerRecords.Count}");
-                // var dnsMessage = DnsMessage.Parse(dnsResponsePacket);
-                //
-                // // Look for TXT records in the Answer section
-                // var txtRecords = dnsMessage.sAnswerRecords
-                //     .OfType<TxtRecord>()
-                //     .ToList();
-                //
-                // Console.WriteLine($"Found {txtRecords.Count} TXT records in DNS response");
-                //
-                // // Find a TXT record containing "pkarr="
-                // foreach (var txtRecord in txtRecords)
-                // {
-                //     foreach (var textPart in txtRecord.TextParts)
-                //     {
-                //         if (textPart.StartsWith("pkarr="))
-                //         {
-                //             base64Payload = textPart.Substring(6); // Skip "pkarr="
-                //             Console.WriteLine($"Found pkarr payload in TXT record for {txtRecord.Name}");
-                //             break;
-                //         }
-                //     }
-                //     
-                //     if (base64Payload != null)
-                //         break;
-                // }
-          
+            var dnsMessage = DnsMessage.Parse(pkarrSignedPacket.EncodedDnsRecords);
+            dnsMessage.PrintDump();
         }
         catch (Exception ex)
         {
@@ -86,25 +59,11 @@ public class PkarrNativeDecodeTests
             // We'll try a fallback approach if the library fails
         }
 
-        //
-        // // 4. Decode Base64 Payload
-        // byte[] signedPacket;
-        // try
-        // {
-        //     // Remove potential escape characters if any were present
-        //     base64Payload = base64Payload.Replace("\\\"", "\"").Replace("\\\\", "\\");
-        //     signedPacket = Convert.FromBase64String(base64Payload);
-        // }
-        // catch (FormatException e)
-        // {
-        //     Assert.Fail($"Failed to decode base64 payload: {e.Message}. Payload was: {base64Payload}");
-        //     return;
-        // }
-        //
+
         // // 5. Separate signature, timestamp, and records
-        // const int signatureLength = 64;
-        // const int timestampLength = 8;
-        // const int headerLength = signatureLength + timestampLength;
+        const int signatureLength = 64;
+        const int timestampLength = 8;
+        const int headerLength = signatureLength + timestampLength;
         //
         // Assert.IsTrue(signedPacket.Length >= headerLength, $"Signed packet is too short. Length: {signedPacket.Length}");
         //
@@ -122,7 +81,8 @@ public class PkarrNativeDecodeTests
         //
         // Console.WriteLine($"Extracted Timestamp: {timestamp.ToString("o")}"); // Log the timestamp
         //
-        // // 6. Decode the zbase32 public key
+        // 6. Decode the zbase32 public key
+
         // byte[] publicKeyBytes;
         // try
         // {
@@ -134,17 +94,16 @@ public class PkarrNativeDecodeTests
         //     return;
         // }
         //
-        // Assert.AreEqual(32, publicKeyBytes.Length, "Decoded Ed25519 public key should be 32 bytes long.");
         //
-        // // 7. Verify the signature
-        // // The signed data is the concatenation of the timestamp and the encoded records
+        // 7. Verify the signature
+        // The signed data is the concatenation of the timestamp and the encoded records
         // byte[] dataToVerify = new byte[timestampLength + encodedRecords.Length];
         // Buffer.BlockCopy(timestampBytes, 0, dataToVerify, 0, timestampLength);
         // Buffer.BlockCopy(encodedRecords, 0, dataToVerify, timestampLength, encodedRecords.Length);
         //
         // var publicKey = PublicKey.Import(SignatureAlgorithm.Ed25519, publicKeyBytes, KeyBlobFormat.RawPublicKey);
         // bool isValid = SignatureAlgorithm.Ed25519.Verify(publicKey, dataToVerify, signature);
-        //
+
         // // 8. Assert verification result
         // Assert.IsTrue(isValid, "Pkarr signature verification failed.");
         //
@@ -178,8 +137,4 @@ public class PkarrNativeDecodeTests
         //     }
         // }
     }
-    
-    
-    
-    
 }

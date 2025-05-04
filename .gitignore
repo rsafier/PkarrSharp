@@ -1,7 +1,9 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
 .aider*
 target/
-obj/
-bin/
+tests/
 .idea/
-*.dylib
-Folder.DotSettings.user

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
@@ -7,19 +7,15 @@
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(DefineConstants);WINDOWS</DefineConstants>
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(DefineConstants);OSX</DefineConstants>
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(DefineConstants);LINUX</DefineConstants>
-
-        <IsPackable>false</IsPackable>
+        <IsPackable>true</IsPackable>
+        <Version>0.0.1</Version>
     </PropertyGroup>
+
 
     <ItemGroup>
         <PackageReference Include="ARSoft.Tools.Net.Dns" Version="2.3.1"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2"/>
-        <PackageReference Include="MSTest.TestAdapter" Version="2.2.7"/>
-        <PackageReference Include="MSTest.TestFramework" Version="2.2.7"/>
         <PackageReference Include="NSec.Cryptography" Version="25.4.0"/>
-        <PackageReference Include="ServiceStack.Text" Version="8.7.2"/>
     </ItemGroup>
-
     <ItemGroup>
         <None Update="libpkarr_ffi.so">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -30,10 +26,6 @@
         <None Update="libpkarr_ffi.dylib">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\PkarrSharp\PkarrSharp.csproj"/>
     </ItemGroup>
 
 </Project>
