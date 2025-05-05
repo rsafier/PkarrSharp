@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSec.Cryptography;
 using PkarrSharp;
+using ServiceStack.Text;
 
 // Using the NSec.Cryptography library
 
@@ -11,107 +12,107 @@ namespace PkarrTests;
 [TestClass]
 public class PkarrTests
 {
-    // Define the structures that match the Rust FFI
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ResolveResult
-    {
-        public IntPtr data;
-        public UIntPtr length;
-        public IntPtr error;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct ResourceRecord
-    {
-        public IntPtr name;
-        public ushort classType;
-        public uint ttl;
-        public ushort rdataType;
-        public IntPtr rdataData;
-        public UIntPtr rdataLength;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SignedPacketFFI
-    {
-        public IntPtr publicKey;
-        public ulong timestamp;
-        public ulong lastSeen;
-        public IntPtr records;
-        public UIntPtr recordsCount;
-        public IntPtr rawData;
-        public UIntPtr rawLength;
-    }
+    // // Define the structures that match the Rust FFI
+    // [StructLayout(LayoutKind.Sequential)]
+    // public struct ResolveResult
+    // {
+    //     public IntPtr data;
+    //     public UIntPtr length;
+    //     public IntPtr error;
+    // }
+    //
+    // [StructLayout(LayoutKind.Sequential)]
+    // public struct ResourceRecord
+    // {
+    //     public IntPtr name;
+    //     public ushort classType;
+    //     public uint ttl;
+    //     public ushort rdataType;
+    //     public IntPtr rdataData;
+    //     public UIntPtr rdataLength;
+    // }
+    //
+    // [StructLayout(LayoutKind.Sequential)]
+    // public struct SignedPacketFFI
+    // {
+    //     public IntPtr publicKey;
+    //     public ulong timestamp;
+    //     public ulong lastSeen;
+    //     public IntPtr records;
+    //     public UIntPtr recordsCount;
+    //     public IntPtr rawData;
+    //     public UIntPtr rawLength;
+    // }
 
     // P/Invoke declarations for the pkarr-ffi library
-    private static string GetLibraryName()
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            return "libpkarr_ffi.dylib";
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            return "libpkarr_ffi.so";
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return "pkarr_ffi.dll";
-        throw new PlatformNotSupportedException("Unsupported OS platform");
-    }
-
-#if OSX
-    [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_init")]
-    public static extern IntPtr PkarrInit();
-
-    [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_shutdown")]
-    public static extern void PkarrShutdown();
-
-    [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_resolve")]
-    public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
-
-    [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_result")]
-    public static extern void PkarrFreeResult(ResolveResult result);
-
-    [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_signed_packet_ffi")]
-    public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
-#elif LINUX
-        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_init")]
-        public static extern IntPtr PkarrInit();
-
-        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_shutdown")]
-        public static extern void PkarrShutdown();
-
-        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_resolve")]
-        public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
-
-        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_free_result")]
-        public static extern void PkarrFreeResult(ResolveResult result);
-
-        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_free_signed_packet_ffi")]
-        public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
-#elif WINDOWS
-        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_init")]
-        public static extern IntPtr PkarrInit();
-
-        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_shutdown")]
-        public static extern void PkarrShutdown();
-
-        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_resolve")]
-        public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
-
-        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_free_result")]
-        public static extern void PkarrFreeResult(ResolveResult result);
-
-        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_free_signed_packet_ffi")]
-        public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
-#else
-        public static IntPtr PkarrInit() => throw new PlatformNotSupportedException("Unsupported OS platform");
-        public static void PkarrShutdown() => throw new PlatformNotSupportedException("Unsupported OS platform");
-        public static ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent) => throw new PlatformNotSupportedException("Unsupported OS platform");
-        public static void PkarrFreeResult(ResolveResult result) => throw new PlatformNotSupportedException("Unsupported OS platform");
-        public static void PkarrFreeSignedPacketFFI(SignedPacketFFI packet) => throw new PlatformNotSupportedException("Unsupported OS platform");
-#endif
+//     private static string GetLibraryName()
+//     {
+//         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+//             return "libpkarr_ffi.dylib";
+//         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+//             return "libpkarr_ffi.so";
+//         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+//             return "pkarr_ffi.dll";
+//         throw new PlatformNotSupportedException("Unsupported OS platform");
+//     }
+//
+// #if OSX
+//     [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_init")]
+//     public static extern IntPtr PkarrInit();
+//
+//     [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_shutdown")]
+//     public static extern void PkarrShutdown();
+//
+//     [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_resolve")]
+//     public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
+//
+//     [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_result")]
+//     public static extern void PkarrFreeResult(ResolveResult result);
+//
+//     [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_free_signed_packet_ffi")]
+//     public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
+// #elif LINUX
+//         [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_init")]
+//         public static extern IntPtr PkarrInit();
+//
+//         [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_shutdown")]
+//         public static extern void PkarrShutdown();
+//
+//         [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_resolve")]
+//         public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
+//
+//         [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_free_result")]
+//         public static extern void PkarrFreeResult(ResolveResult result);
+//
+//         [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_free_signed_packet_ffi")]
+//         public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
+// #elif WINDOWS
+//         [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_init")]
+//         public static extern IntPtr PkarrInit();
+//
+//         [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_shutdown")]
+//         public static extern void PkarrShutdown();
+//
+//         [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_resolve")]
+//         public static extern ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent);
+//
+//         [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_free_result")]
+//         public static extern void PkarrFreeResult(ResolveResult result);
+//
+//         [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_free_signed_packet_ffi")]
+//         public static extern void PkarrFreeSignedPacketFFI(SignedPacketFFI packet);
+// #else
+//         public static IntPtr PkarrInit() => throw new PlatformNotSupportedException("Unsupported OS platform");
+//         public static void PkarrShutdown() => throw new PlatformNotSupportedException("Unsupported OS platform");
+//         public static ResolveResult PkarrResolve(IntPtr publicKeyStr, bool mostRecent) => throw new PlatformNotSupportedException("Unsupported OS platform");
+//         public static void PkarrFreeResult(ResolveResult result) => throw new PlatformNotSupportedException("Unsupported OS platform");
+//         public static void PkarrFreeSignedPacketFFI(SignedPacketFFI packet) => throw new PlatformNotSupportedException("Unsupported OS platform");
+// #endif
 
     [TestInitialize]
     public void Setup()
     {
-        var error = PkarrInit();
+        var error = PkarrFfi.PkarrInit();
         if (error != IntPtr.Zero)
         {
             var errorMessage = Marshal.PtrToStringAnsi(error);
@@ -124,8 +125,33 @@ public class PkarrTests
     [TestCleanup]
     public void Cleanup()
     {
-        PkarrShutdown();
+        PkarrFfi.PkarrShutdown();
         Console.WriteLine("pkarr shutdown completed");
+    }
+
+    [TestMethod]
+    public void TestResolveClient()
+    {
+       var r1= PkarrSharp.PkarrSharpInterpo.Resolve("gpj136mfx7j8qeu3gurpm9eys7zuyt43pnx5f45bfw1s7thdoa8o", false);
+       var r2= PkarrSharp.PkarrSharpInterpo.Resolve("o4dksfbqk85ogzdb5osziw6befigbuxmuxkuxq8434q89uj56uyy", true);
+       r1.PrintDump(); 
+    }
+    
+    [TestMethod]
+    public void TestResolveClientInvalidKey()
+    {
+        try
+        {
+            var r1 = PkarrSharp.PkarrSharpInterpo.Resolve("invalid_key_format", false);
+
+        }
+        catch (PkarrException e)
+        {
+            Assert.AreEqual("Invalid zbase32 encoded key",e.Message);;
+            return;
+        }
+        Assert.Fail();
+
     }
 
     [TestMethod]
@@ -136,13 +162,13 @@ public class PkarrTests
         Console.WriteLine($"Testing resolve most recent with public key: {publicKey}");
 
         var publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
-        var result = PkarrResolve(publicKeyPtr, true);
+        var result = PkarrFfi.PkarrResolve(publicKeyPtr, true);
         Marshal.FreeHGlobal(publicKeyPtr);
 
         if (result.error != IntPtr.Zero)
         {
             var errorMessage = Marshal.PtrToStringAnsi(result.error);
-            PkarrFreeResult(result);
+            PkarrFfi.PkarrFreeResult(result);
             Console.WriteLine($"Resolve most recent failed: {errorMessage}");
             // Not failing the test as this might be expected behavior if no data exists
             return;
@@ -176,7 +202,7 @@ public class PkarrTests
 
             // Store the pointer to free it later
             var packetPtr = result.data;
-            PkarrFreeSignedPacketFFI(packet);
+            PkarrFfi.PkarrFreeSignedPacketFFI(packet);
             // Don't free result.data again in PkarrFreeResult since we already freed it
             result.data = IntPtr.Zero;
         }
@@ -186,7 +212,7 @@ public class PkarrTests
             // Not failing the test as this might be expected behavior if no data exists
         }
 
-        PkarrFreeResult(result);
+        PkarrFfi.PkarrFreeResult(result);
     }
 
     [TestMethod]
@@ -197,13 +223,13 @@ public class PkarrTests
         Console.WriteLine($"Testing resolve with public key: {publicKey}");
 
         var publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
-        var result = PkarrResolve(publicKeyPtr, false);
+        var result = PkarrFfi.PkarrResolve(publicKeyPtr, false);
         Marshal.FreeHGlobal(publicKeyPtr);
 
         if (result.error != IntPtr.Zero)
         {
             var errorMessage = Marshal.PtrToStringAnsi(result.error);
-            PkarrFreeResult(result);
+            PkarrFfi.PkarrFreeResult(result);
             Console.WriteLine($"Resolve failed: {errorMessage}");
             // Not failing the test as this might be expected behavior if no data exists
             return;
@@ -237,7 +263,7 @@ public class PkarrTests
 
             // Store the pointer to free it later
             var packetPtr = result.data;
-            PkarrFreeSignedPacketFFI(packet);
+            PkarrFfi.PkarrFreeSignedPacketFFI(packet);
             // Don't free result.data again in PkarrFreeResult since we already freed it
             result.data = IntPtr.Zero;
         }
@@ -247,31 +273,70 @@ public class PkarrTests
             // Not failing the test as this might be expected behavior if no data exists
         }
 
-        PkarrFreeResult(result);
+        PkarrFfi.PkarrFreeResult(result);
     }
+    
+    
+    [TestMethod]
+    public void TestResolveNative()
+    {
+        // Using a placeholder public key for testing. Replace with a real key if needed.
+        var publicKey = "o4dksfbqk85ogzdb5osziw6befigbuxmuxkuxq8434q89uj56uyy";
+        Console.WriteLine($"Testing resolve with public key: {publicKey}");
 
-#if OSX
-    [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_generate_keypair")]
-    public static extern ResolveResult PkarrGenerateKeypair();
+        var publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
+        var result = PkarrFfi.PkarrResolve(publicKeyPtr, false);
+        Marshal.FreeHGlobal(publicKeyPtr);
 
-    [DllImport("libpkarr_ffi.dylib", EntryPoint = "pkarr_publish")]
-    public static extern ResolveResult PkarrPublish(IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
-#elif LINUX
-        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_generate_keypair")]
-        public static extern ResolveResult PkarrGenerateKeypair();
+        if (result.error != IntPtr.Zero)
+        {
+            var errorMessage = Marshal.PtrToStringAnsi(result.error);
+            PkarrFfi.PkarrFreeResult(result);
+            Console.WriteLine($"Resolve failed: {errorMessage}");
+            // Not failing the test as this might be expected behavior if no data exists
+            return;
+        }
 
-        [DllImport("libpkarr_ffi.so", EntryPoint = "pkarr_publish")]
-        public static extern ResolveResult PkarrPublish(IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
-#elif WINDOWS
-        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_generate_keypair")]
-        public static extern ResolveResult PkarrGenerateKeypair();
+        if (result.data != IntPtr.Zero && result.length.ToUInt64() > 0)
+        {
+            var packet = Marshal.PtrToStructure<SignedPacketFFI>(result.data);
+            var pubKey = Marshal.PtrToStringAnsi(packet.publicKey);
+            Console.WriteLine($"Resolved packet for public key: {pubKey}");
+            Console.WriteLine($"Timestamp: {packet.timestamp}");
+            Console.WriteLine($"Last Seen: {packet.lastSeen}");
+            Console.WriteLine($"Number of records: {packet.recordsCount.ToUInt64()}");
 
-        [DllImport("pkarr_ffi.dll", EntryPoint = "pkarr_publish")]
-        public static extern ResolveResult PkarrPublish(IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl);
-#else
-        public static ResolveResult PkarrGenerateKeypair() => throw new PlatformNotSupportedException("Unsupported OS platform");
-        public static ResolveResult PkarrPublish(IntPtr privateKeyStr, IntPtr txtKey, IntPtr txtValue, uint ttl) => throw new PlatformNotSupportedException("Unsupported OS platform");
-#endif
+            if (packet.recordsCount.ToUInt64() > 0 && packet.records != IntPtr.Zero)
+                for (ulong i = 0; i < packet.recordsCount.ToUInt64(); i++)
+                {
+                    var recordPtr = IntPtr.Add(packet.records, (int)i * Marshal.SizeOf<ResourceRecord>());
+                    var record = Marshal.PtrToStructure<ResourceRecord>(recordPtr);
+                    var name = Marshal.PtrToStringAnsi(record.name);
+                    var rdata = Marshal.PtrToStringAnsi(record.rdataData);
+                    Console.WriteLine($"Record {i + 1}:");
+                    Console.WriteLine($"  Name: {name}");
+                    Console.WriteLine($"  Class: {record.classType}");
+                    Console.WriteLine($"  TTL: {record.ttl}");
+                    Console.WriteLine($"  RData Type: {record.rdataType}");
+                    Console.WriteLine($"  RData: {rdata}");
+                }
+            else
+                Console.WriteLine("No records found in the packet.");
+
+            // Store the pointer to free it later
+            var packetPtr = result.data;
+            PkarrFfi.PkarrFreeSignedPacketFFI(packet);
+            // Don't free result.data again in PkarrFreeResult since we already freed it
+            result.data = IntPtr.Zero;
+        }
+        else
+        {
+            Console.WriteLine("No data returned from resolve");
+            // Not failing the test as this might be expected behavior if no data exists
+        }
+
+        PkarrFfi.PkarrFreeResult(result);
+    }
 
     [TestMethod]
     public void TestResolveInvalidKey()
@@ -280,7 +345,7 @@ public class PkarrTests
         Console.WriteLine($"Testing resolve with invalid public key: {publicKey}");
 
         var publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
-        var result = PkarrResolve(publicKeyPtr, true);
+        var result = PkarrFfi.PkarrResolve(publicKeyPtr, true);
         Marshal.FreeHGlobal(publicKeyPtr);
 
         Assert.IsTrue(result.error != IntPtr.Zero, "Expected error for invalid public key");
@@ -291,19 +356,19 @@ public class PkarrTests
             Console.WriteLine($"Expected error received: {errorMessage}");
         }
 
-        PkarrFreeResult(result);
+        PkarrFfi.PkarrFreeResult(result);
     }
 
     [TestMethod]
     public void TestGenerateKeypair()
     {
         Console.WriteLine("Testing keypair generation");
-        var result = PkarrGenerateKeypair();
+        var result = PkarrFfi.PkarrGenerateKeypair();
 
         if (result.error != IntPtr.Zero)
         {
             var errorMessage = Marshal.PtrToStringAnsi(result.error);
-            PkarrFreeResult(result);
+            PkarrFfi.PkarrFreeResult(result);
             Console.WriteLine($"Keypair generation failed: {errorMessage}");
             Assert.Fail($"Keypair generation failed: {errorMessage}");
         }
@@ -341,7 +406,7 @@ public class PkarrTests
             Assert.Fail("No data returned from keypair generation");
         }
 
-        PkarrFreeResult(result);
+        PkarrFfi.PkarrFreeResult(result);
     }
 
     [TestMethod]
@@ -381,7 +446,7 @@ public class PkarrTests
         var txtKeyPtr = Marshal.StringToHGlobalAnsi(txtKey);
         var txtValuePtr = Marshal.StringToHGlobalAnsi(txtValue);
 
-        var result = PkarrPublish(privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
+        var result = PkarrFfi.PkarrPublish(privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
 
         Marshal.FreeHGlobal(privateKeyPtr);
         Marshal.FreeHGlobal(txtKeyPtr);
@@ -390,7 +455,7 @@ public class PkarrTests
         if (result.error != IntPtr.Zero)
         {
             var errorMessage = Marshal.PtrToStringAnsi(result.error);
-            PkarrFreeResult(result);
+            PkarrFfi.PkarrFreeResult(result);
             Console.WriteLine($"Publish failed: {errorMessage}");
             Assert.Fail($"Publish failed: {errorMessage}");
         }
@@ -411,7 +476,7 @@ public class PkarrTests
             Console.WriteLine("No data returned from publish");
         }
 
-        PkarrFreeResult(result);
+        PkarrFfi.PkarrFreeResult(result);
 
         // Add a small delay to allow for propagation
         Console.WriteLine("Waiting for propagation...");
@@ -420,13 +485,13 @@ public class PkarrTests
         // Now attempt to resolve the published record
         Console.WriteLine($"Testing resolve after publish with public key: {publicKey}");
         var publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
-        var resolveResult = PkarrResolve(publicKeyPtr, true);
+        var resolveResult = PkarrFfi.PkarrResolve(publicKeyPtr, true);
         Marshal.FreeHGlobal(publicKeyPtr);
 
         if (resolveResult.error != IntPtr.Zero)
         {
             var errorMessage = Marshal.PtrToStringAnsi(resolveResult.error);
-            PkarrFreeResult(resolveResult);
+            PkarrFfi.PkarrFreeResult(resolveResult);
             Console.WriteLine($"Resolve after publish failed: {errorMessage}");
             // Not failing the test as this might be expected if the data isn't immediately available
             return;
@@ -460,7 +525,7 @@ public class PkarrTests
 
             // Store the pointer to free it later
             var packetPtr = resolveResult.data;
-            PkarrFreeSignedPacketFFI(packet);
+            PkarrFfi.PkarrFreeSignedPacketFFI(packet);
             // Don't free result.data again in PkarrFreeResult since we already freed it
             resolveResult.data = IntPtr.Zero;
         }
@@ -470,7 +535,7 @@ public class PkarrTests
             // Not failing the test as this might be expected if the data isn't immediately available
         }
 
-        PkarrFreeResult(resolveResult);
+        PkarrFfi.PkarrFreeResult(resolveResult);
     }
 
 
@@ -491,7 +556,7 @@ public class PkarrTests
         var txtKeyPtr = Marshal.StringToHGlobalAnsi(txtKey);
         var txtValuePtr = Marshal.StringToHGlobalAnsi(txtValue);
 
-        var result = PkarrPublish(privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
+        var result = PkarrFfi.PkarrPublish(privateKeyPtr, txtKeyPtr, txtValuePtr, ttl);
 
         Marshal.FreeHGlobal(privateKeyPtr);
         Marshal.FreeHGlobal(txtKeyPtr);
@@ -500,7 +565,7 @@ public class PkarrTests
         if (result.error != IntPtr.Zero)
         {
             var errorMessage = Marshal.PtrToStringAnsi(result.error);
-            PkarrFreeResult(result);
+            PkarrFfi.PkarrFreeResult(result);
             Console.WriteLine($"Publish failed: {errorMessage}");
             Assert.Fail($"Publish failed: {errorMessage}");
         }
@@ -521,7 +586,7 @@ public class PkarrTests
             Console.WriteLine("No data returned from publish");
         }
 
-        PkarrFreeResult(result);
+        PkarrFfi.PkarrFreeResult(result);
 
         // Add a small delay to allow for propagation
         Console.WriteLine("Waiting for propagation...");
@@ -530,13 +595,13 @@ public class PkarrTests
         // Now attempt to resolve the published record
         Console.WriteLine($"Testing resolve after publish with public key: {publicKey}");
         var publicKeyPtr = Marshal.StringToHGlobalAnsi(publicKey);
-        var resolveResult = PkarrResolve(publicKeyPtr, true);
+        var resolveResult = PkarrFfi.PkarrResolve(publicKeyPtr, true);
         Marshal.FreeHGlobal(publicKeyPtr);
 
         if (resolveResult.error != IntPtr.Zero)
         {
             var errorMessage = Marshal.PtrToStringAnsi(resolveResult.error);
-            PkarrFreeResult(resolveResult);
+            PkarrFfi.PkarrFreeResult(resolveResult);
             Console.WriteLine($"Resolve after publish failed: {errorMessage}");
             // Not failing the test as this might be expected if the data isn't immediately available
             return;
@@ -570,7 +635,7 @@ public class PkarrTests
 
             // Store the pointer to free it later
             var packetPtr = resolveResult.data;
-            PkarrFreeSignedPacketFFI(packet);
+            PkarrFfi.PkarrFreeSignedPacketFFI(packet);
             // Don't free result.data again in PkarrFreeResult since we already freed it
             resolveResult.data = IntPtr.Zero;
         }
@@ -580,7 +645,7 @@ public class PkarrTests
             // Not failing the test as this might be expected if the data isn't immediately available
         }
 
-        PkarrFreeResult(resolveResult);
+        PkarrFfi.PkarrFreeResult(resolveResult);
     }
 
 

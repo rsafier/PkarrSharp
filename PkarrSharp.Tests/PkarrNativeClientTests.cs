@@ -40,7 +40,7 @@ public class PkarrNativeClientTests
         result.DnsPacket.PrintDump();
         result.SignedPacket.PrintDump();
          
-        await Task.Delay(1000); //slow it down a little so we don't rate limit ourselves
+        await Task.Delay(2000); //slow it down a little so we don't rate limit ourselves
     }
 
     [Test]

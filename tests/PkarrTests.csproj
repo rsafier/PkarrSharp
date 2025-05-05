@@ -22,14 +22,27 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="libpkarr_ffi.so">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="pkarr_ffi.dll">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
+        <!-- macOS (osx-x64) -->
         <None Update="libpkarr_ffi.dylib">
+            <PackagePath>runtimes\osx-x64\native\libpkarr_ffi.dylib</PackagePath>
+            <Pack>true</Pack>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+
+        <!-- Linux (linux-x64) -->
+        <None Update="libpkarr_ffi.so">
+            <PackagePath>runtimes\linux-x64\native\libpkarr_ffi.so</PackagePath>
+            <Pack>true</Pack>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            
+        </None>
+
+        <!-- Windows (win-x64) -->
+        <None Update="pkarr_ffi.dll">
+            <PackagePath>runtimes\win-x64\native\pkarr_ffi.dll</PackagePath>
+            <Pack>true</Pack>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            
         </None>
     </ItemGroup>
 
